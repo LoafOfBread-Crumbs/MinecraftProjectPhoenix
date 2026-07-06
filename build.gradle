@@ -1,0 +1,103 @@
+plugins {
+    id 'java'
+    id 'application'
+}
+
+group = 'com.modmigrator'
+version = '1.0.0'
+
+java {
+    sourceCompatibility = JavaVersion.VERSION_17
+    targetCompatibility = JavaVersion.VERSION_17
+}
+
+application {
+    mainClass = 'com.modmigrator.Main'
+}
+
+run {
+    doFirst {
+        def jfxJars = configurations.runtimeClasspath.filter {
+            it.name.contains('javafx')
+        }.asPath
+        jvmArgs = [
+            '--module-path', jfxJars,
+            '--add-modules', 'javafx.controls,javafx.fxml,javafx.graphics,javafx.base,javafx.swing',
+            '--add-opens', 'javafx.graphics/com.sun.javafx.application=ALL-UNNAMED',
+            '--add-opens', 'javafx.controls/com.sun.javafx.scene.control=ALL-UNNAMED'
+        ]
+    }
+}
+
+def javafxVersion = '21.0.2'
+def javafxPlatform = 'win'
+
+repositories {
+    mavenCentral()
+    maven { url 'https://maven.fabricmc.net/' }
+    maven { url 'https://maven.minecraftforge.net/' }
+    maven { url 'https://libraries.minecraft.net/' }
+}
+
+dependencies {
+    // JavaFX (pulled directly from Maven Central, no plugin needed)
+    implementation "org.openjfx:javafx-controls:${javafxVersion}:${javafxPlatform}"
+    implementation "org.openjfx:javafx-fxml:${javafxVersion}:${javafxPlatform}"
+    implementation "org.openjfx:javafx-graphics:${javafxVersion}:${javafxPlatform}"
+    implementation "org.openjfx:javafx-base:${javafxVersion}:${javafxPlatform}"
+    implementation "org.openjfx:javafx-swing:${javafxVersion}:${javafxPlatform}"
+
+    // CFR Decompiler
+    implementation 'org.benf:cfr:0.152'
+
+    // Tiny Remapper (Fabric's bytecode remapper)
+    implementation 'net.fabricmc:tiny-remapper:0.10.4'
+
+    // Tiny Mappings Parser
+    implementation 'net.fabricmc:mapping-io:0.6.1'
+
+    // ASM for bytecode inspection
+    implementation 'org.ow2.asm:asm:9.7'
+    implementation 'org.ow2.asm:asm-tree:9.7'
+    implementation 'org.ow2.asm:asm-util:9.7'
+    implementation 'org.ow2.asm:asm-commons:9.7'
+
+    // JSON parsing (for Mojang version manifest, fabric.mod.json, etc.)
+    implementation 'com.google.code.gson:gson:2.11.0'
+
+    // HTTP client for fetching mappings
+    implementation 'com.squareup.okhttp3:okhttp:4.12.0'
+
+    // Apache Commons for ZIP/JAR utilities
+    implementation 'commons-io:commons-io:2.16.1'
+
+    // AtlantaFX - Modern JavaFX theme
+    implementation 'io.github.mkpaz:atlantafx-base:2.0.1'
+
+    // Ikonli icons for JavaFX
+    implementation 'org.kordamp.ikonli:ikonli-javafx:12.3.1'
+    implementation 'org.kordamp.ikonli:ikonli-materialdesign2-pack:12.3.1'
+}
+
+jar {
+    manifest {
+        attributes(
+            'Main-Class': 'com.modmigrator.Main',
+            'Class-Path': configurations.runtimeClasspath.files.collect { it.name }.join(' ')
+        )
+    }
+}
+
+task fatJar(type: Jar) {
+    archiveClassifier = 'all'
+    duplicatesStrategy = DuplicatesStrategy.EXCLUDE
+    manifest {
+        attributes 'Main-Class': 'com.modmigrator.Main'
+    }
+    from {
+        configurations.runtimeClasspath.collect {
+            it.isDirectory() ? it : zipTree(it)
+        }
+    }
+    with jar
+}

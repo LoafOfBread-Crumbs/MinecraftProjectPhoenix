@@ -1,0 +1,411 @@
+/* ============================================================
+   Minecraft Mod Migrator — Application Stylesheet
+   ============================================================ */
+
+.root-pane {
+    -fx-background-color: #0f172a;
+}
+
+/* TOP BAR */
+.top-bar {
+    -fx-background-color: #1e293b;
+    -fx-border-color: #334155;
+    -fx-border-width: 0 0 1 0;
+}
+
+.app-title {
+    -fx-font-size: 18px;
+    -fx-font-weight: bold;
+    -fx-text-fill: #f8fafc;
+}
+
+.app-subtitle {
+    -fx-font-size: 12px;
+    -fx-text-fill: #94a3b8;
+}
+
+.loader-chips {
+    -fx-font-size: 11px;
+    -fx-text-fill: #64748b;
+    -fx-background-color: #1e293b;
+    -fx-border-color: #334155;
+    -fx-border-radius: 20;
+    -fx-background-radius: 20;
+    -fx-padding: 4 12 4 12;
+}
+
+/* SCROLL + CONTENT */
+.main-scroll {
+    -fx-background-color: #0f172a;
+    -fx-background: #0f172a;
+    -fx-border-color: transparent;
+}
+
+.main-scroll > .viewport {
+    -fx-background-color: #0f172a;
+}
+
+.main-content {
+    -fx-background-color: #0f172a;
+}
+
+/* CARDS */
+.card {
+    -fx-background-color: #1e293b;
+    -fx-border-color: #334155;
+    -fx-border-width: 1;
+    -fx-border-radius: 10;
+    -fx-background-radius: 10;
+    -fx-padding: 18;
+    -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.3), 8, 0, 0, 2);
+}
+
+.section-title {
+    -fx-font-size: 13px;
+    -fx-font-weight: bold;
+    -fx-text-fill: #94a3b8;
+    -fx-padding: 0 0 8 0;
+}
+
+/* DROP ZONE */
+.drop-zone {
+    -fx-background-color: #0f172a;
+    -fx-border-color: #334155;
+    -fx-border-width: 2;
+    -fx-border-style: dashed;
+    -fx-border-radius: 8;
+    -fx-background-radius: 8;
+    -fx-cursor: hand;
+    -fx-padding: 16;
+}
+
+.drop-zone:hover {
+    -fx-border-color: #3b82f6;
+    -fx-background-color: #1e3a5f;
+}
+
+.drop-zone-active {
+    -fx-border-color: #22c55e;
+    -fx-background-color: #0d2818;
+}
+
+.drop-label {
+    -fx-font-size: 14px;
+    -fx-font-weight: bold;
+    -fx-text-fill: #e2e8f0;
+}
+
+.drop-sub-label {
+    -fx-font-size: 12px;
+    -fx-text-fill: #64748b;
+}
+
+/* MOD INFO */
+.info-label {
+    -fx-font-size: 12px;
+    -fx-text-fill: #64748b;
+    -fx-font-weight: bold;
+    -fx-min-width: 90px;
+}
+
+.info-value {
+    -fx-font-size: 12px;
+    -fx-text-fill: #e2e8f0;
+}
+
+.mod-desc {
+    -fx-font-size: 11px;
+    -fx-text-fill: #64748b;
+    -fx-font-style: italic;
+}
+
+/* FORM FIELDS */
+.field-label {
+    -fx-font-size: 12px;
+    -fx-text-fill: #94a3b8;
+    -fx-font-weight: bold;
+}
+
+.text-field {
+    -fx-background-color: #0f172a;
+    -fx-border-color: #334155;
+    -fx-border-radius: 6;
+    -fx-background-radius: 6;
+    -fx-text-fill: #e2e8f0;
+    -fx-prompt-text-fill: #475569;
+    -fx-padding: 7 10 7 10;
+    -fx-font-size: 12px;
+}
+
+.text-field:focused {
+    -fx-border-color: #3b82f6;
+}
+
+.combo-box {
+    -fx-background-color: #0f172a;
+    -fx-border-color: #334155;
+    -fx-border-radius: 6;
+    -fx-background-radius: 6;
+    -fx-text-fill: #e2e8f0;
+    -fx-font-size: 12px;
+    -fx-padding: 2 6 2 6;
+}
+
+.combo-box .list-cell {
+    -fx-background-color: #0f172a;
+    -fx-text-fill: #e2e8f0;
+}
+
+.combo-box-popup .list-view {
+    -fx-background-color: #1e293b;
+    -fx-border-color: #334155;
+}
+
+.combo-box-popup .list-view .list-cell {
+    -fx-background-color: transparent;
+    -fx-text-fill: #e2e8f0;
+    -fx-padding: 6 12 6 12;
+}
+
+.combo-box-popup .list-view .list-cell:hover {
+    -fx-background-color: #334155;
+}
+
+.combo-box-popup .list-view .list-cell:selected {
+    -fx-background-color: #1d4ed8;
+}
+
+.check-box {
+    -fx-text-fill: #cbd5e1;
+    -fx-font-size: 12px;
+}
+
+.check-box .box {
+    -fx-background-color: #0f172a;
+    -fx-border-color: #475569;
+    -fx-border-radius: 4;
+    -fx-background-radius: 4;
+}
+
+.check-box:selected .box {
+    -fx-background-color: #3b82f6;
+    -fx-border-color: #3b82f6;
+}
+
+.check-box:selected .mark {
+    -fx-background-color: white;
+}
+
+/* BUTTONS */
+.btn-primary {
+    -fx-background-color: #3b82f6;
+    -fx-text-fill: white;
+    -fx-font-weight: bold;
+    -fx-font-size: 13px;
+    -fx-border-radius: 8;
+    -fx-background-radius: 8;
+    -fx-padding: 9 22 9 22;
+    -fx-cursor: hand;
+}
+
+.btn-primary:hover {
+    -fx-background-color: #2563eb;
+}
+
+.btn-primary:pressed {
+    -fx-background-color: #1d4ed8;
+}
+
+.btn-primary:disabled {
+    -fx-background-color: #1e3a5f;
+    -fx-text-fill: #475569;
+}
+
+.btn-secondary {
+    -fx-background-color: #1e293b;
+    -fx-text-fill: #94a3b8;
+    -fx-font-size: 12px;
+    -fx-border-color: #334155;
+    -fx-border-radius: 8;
+    -fx-background-radius: 8;
+    -fx-padding: 8 16 8 16;
+    -fx-cursor: hand;
+}
+
+.btn-secondary:hover {
+    -fx-background-color: #334155;
+    -fx-text-fill: #e2e8f0;
+}
+
+.btn-secondary:disabled {
+    -fx-background-color: #0f172a;
+    -fx-text-fill: #334155;
+    -fx-border-color: #1e293b;
+}
+
+/* PROGRESS */
+.progress-bar {
+    -fx-accent: #3b82f6;
+    -fx-background-color: #0f172a;
+    -fx-background-radius: 5;
+    -fx-border-radius: 5;
+}
+
+.progress-bar > .bar {
+    -fx-background-color: linear-gradient(to right, #3b82f6, #8b5cf6);
+    -fx-background-radius: 5;
+}
+
+.progress-label {
+    -fx-font-size: 12px;
+    -fx-text-fill: #94a3b8;
+}
+
+.log-area {
+    -fx-background-color: #0f172a;
+    -fx-border-color: #334155;
+    -fx-border-radius: 6;
+    -fx-background-radius: 6;
+    -fx-text-fill: #86efac;
+    -fx-font-family: "Consolas", "Monospaced";
+    -fx-font-size: 11px;
+    -fx-control-inner-background: #0f172a;
+}
+
+.log-area .content {
+    -fx-background-color: #0f172a;
+}
+
+/* STAT BOXES */
+.stat-box {
+    -fx-background-color: #0f172a;
+    -fx-border-color: #334155;
+    -fx-border-radius: 8;
+    -fx-background-radius: 8;
+    -fx-padding: 12 16 12 16;
+    -fx-alignment: center;
+    -fx-spacing: 4;
+}
+
+.stat-label {
+    -fx-font-size: 11px;
+    -fx-text-fill: #64748b;
+    -fx-font-weight: bold;
+    -fx-text-alignment: center;
+}
+
+.stat-value {
+    -fx-font-size: 22px;
+    -fx-font-weight: bold;
+    -fx-text-fill: #e2e8f0;
+    -fx-text-alignment: center;
+}
+
+.stat-value-error {
+    -fx-font-size: 22px;
+    -fx-font-weight: bold;
+    -fx-text-fill: #fca5a5;
+}
+
+.stat-value-warn {
+    -fx-font-size: 22px;
+    -fx-font-weight: bold;
+    -fx-text-fill: #fcd34d;
+}
+
+.stat-value-ok {
+    -fx-font-size: 22px;
+    -fx-font-weight: bold;
+    -fx-text-fill: #86efac;
+}
+
+.result-summary {
+    -fx-font-size: 13px;
+    -fx-text-fill: #cbd5e1;
+}
+
+/* TABLE */
+.table-view {
+    -fx-background-color: #0f172a;
+    -fx-border-color: #334155;
+    -fx-border-radius: 8;
+    -fx-background-radius: 8;
+    -fx-table-cell-border-color: transparent;
+}
+
+.table-view .column-header-background {
+    -fx-background-color: #1e293b;
+}
+
+.table-view .column-header {
+    -fx-background-color: transparent;
+    -fx-border-color: #334155;
+    -fx-border-width: 0 0 1 0;
+}
+
+.table-view .column-header .label {
+    -fx-text-fill: #94a3b8;
+    -fx-font-size: 12px;
+    -fx-font-weight: bold;
+}
+
+.table-row-cell {
+    -fx-background-color: transparent;
+    -fx-border-color: transparent;
+    -fx-table-cell-border-color: transparent;
+}
+
+.table-row-cell:even {
+    -fx-background-color: #0f172a;
+}
+
+.table-row-cell:odd {
+    -fx-background-color: #0d1626;
+}
+
+.table-row-cell:selected {
+    -fx-background-color: #1d3461;
+}
+
+.table-cell {
+    -fx-text-fill: #e2e8f0;
+    -fx-font-size: 12px;
+    -fx-alignment: CENTER_LEFT;
+    -fx-padding: 6 10 6 10;
+}
+
+/* STATUS BAR */
+.status-bar {
+    -fx-background-color: #1e293b;
+    -fx-border-color: #334155;
+    -fx-border-width: 1 0 0 0;
+}
+
+.status-text {
+    -fx-font-size: 11px;
+    -fx-text-fill: #475569;
+}
+
+/* SCROLL BAR */
+.scroll-bar {
+    -fx-background-color: #0f172a;
+}
+
+.scroll-bar .thumb {
+    -fx-background-color: #334155;
+    -fx-background-radius: 4;
+}
+
+.scroll-bar .thumb:hover {
+    -fx-background-color: #475569;
+}
+
+.scroll-bar .track {
+    -fx-background-color: transparent;
+}
+
+.scroll-bar .increment-button,
+.scroll-bar .decrement-button {
+    -fx-background-color: transparent;
+    -fx-padding: 2;
+}
