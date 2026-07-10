@@ -30,6 +30,8 @@ public class MigrationPipeline {
     public MigrationResult run(MigrationConfig config, Consumer<String> statusCallback) {
         long startTime = System.currentTimeMillis();
         MigrationResult result = new MigrationResult();
+        result.setStatus(MigrationResult.Status.FAILED);
+        result.setSummary("Migration not yet complete.");
 
         try {
             String sourceVersion = config.getSourceModInfo().getDetectedMinecraftVersion();
@@ -112,31 +114,20 @@ public class MigrationPipeline {
                 try {
                     decompilerService.decompileJar(remappedJar, sourceDir, statusCallback);
                     result.setOutputSourceDir(sourceDir);
-                } catch (IOException e) {
+                } catch (Throwable e) {
+                    if (statusCallback != null) statusCallback.accept("Decompilation error: " + e.getMessage());
                     result.addIssue(new MigrationIssue(
                         MigrationIssue.Severity.WARNING,
                         MigrationIssue.Category.REMAPPING,
                         "Decompilation Failed",
-                        e.getMessage(),
+                        e.getClass().getSimpleName() + ": " + e.getMessage(),
                         "DecompilerService",
-                        "The remapped JAR was produced but source code could not be generated."
+                        "The remapped JAR was produced but source code could not be generated. Try disabling decompilation for large mods."
                     ));
                 }
             }
 
-            // Step 5: Generate report
-            if (config.isGenerateReport()) {
-                try {
-                    Path reportPath = workDir.resolve("migration-report.html");
-                    reportGenerator.generateHtmlReport(config, result, reportPath);
-                    result.setReportPath(reportPath);
-                    if (statusCallback != null) statusCallback.accept("Report saved: " + reportPath);
-                } catch (IOException e) {
-                    if (statusCallback != null) statusCallback.accept("Warning: Could not save report: " + e.getMessage());
-                }
-            }
-
-            // Determine overall status
+            // Step 5: Determine overall status FIRST so the report reflects it
             long errors = result.getErrorCount();
             long warnings = result.getWarningCount();
 
@@ -157,9 +148,21 @@ public class MigrationPipeline {
                     errors, warnings));
             }
 
-        } catch (Exception e) {
+            // Step 6: Generate report (after status is set)
+            if (config.isGenerateReport()) {
+                try {
+                    Path reportPath = workDir.resolve("migration-report.html");
+                    reportGenerator.generateHtmlReport(config, result, reportPath);
+                    result.setReportPath(reportPath);
+                    if (statusCallback != null) statusCallback.accept("Report saved: " + reportPath);
+                } catch (IOException e) {
+                    if (statusCallback != null) statusCallback.accept("Warning: Could not save report: " + e.getMessage());
+                }
+            }
+
+        } catch (Throwable e) {
             result.setStatus(MigrationResult.Status.FAILED);
-            result.setSummary("Migration pipeline failed: " + e.getMessage());
+            result.setSummary("Migration pipeline failed: " + e.getClass().getSimpleName() + ": " + e.getMessage());
             result.addIssue(new MigrationIssue(
                 MigrationIssue.Severity.ERROR,
                 MigrationIssue.Category.REMAPPING,

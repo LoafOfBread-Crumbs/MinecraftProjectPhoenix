@@ -8,12 +8,16 @@ import okhttp3.OkHttpClient;
 import okhttp3.Request;
 import okhttp3.Response;
 
+import javax.net.ssl.SSLContext;
+import javax.net.ssl.TrustManagerFactory;
+import javax.net.ssl.X509TrustManager;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.URI;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
+import java.security.KeyStore;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
@@ -34,10 +38,31 @@ public class MappingFetcher {
     public MappingFetcher(Path cacheDir) throws IOException {
         this.cacheDir = cacheDir;
         Files.createDirectories(cacheDir);
-        this.client = new OkHttpClient.Builder()
-            .connectTimeout(30, TimeUnit.SECONDS)
-            .readTimeout(60, TimeUnit.SECONDS)
-            .build();
+        this.client = buildHttpClient();
+    }
+
+    private static OkHttpClient buildHttpClient() {
+        try {
+            KeyStore ks = KeyStore.getInstance("Windows-ROOT");
+            ks.load(null, null);
+            TrustManagerFactory tmf = TrustManagerFactory.getInstance(
+                TrustManagerFactory.getDefaultAlgorithm());
+            tmf.init(ks);
+            SSLContext sslContext = SSLContext.getInstance("TLS");
+            sslContext.init(null, tmf.getTrustManagers(), null);
+            X509TrustManager tm = (X509TrustManager) tmf.getTrustManagers()[0];
+            return new OkHttpClient.Builder()
+                .connectTimeout(30, TimeUnit.SECONDS)
+                .readTimeout(120, TimeUnit.SECONDS)
+                .sslSocketFactory(sslContext.getSocketFactory(), tm)
+                .build();
+        } catch (Exception e) {
+            System.err.println("[WARN] Could not load Windows truststore, using default SSL: " + e.getMessage());
+            return new OkHttpClient.Builder()
+                .connectTimeout(30, TimeUnit.SECONDS)
+                .readTimeout(120, TimeUnit.SECONDS)
+                .build();
+        }
     }
 
     public List<String> fetchAvailableMinecraftVersions() throws IOException {

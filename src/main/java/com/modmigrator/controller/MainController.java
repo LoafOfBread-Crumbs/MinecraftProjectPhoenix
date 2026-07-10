@@ -249,7 +249,9 @@ public class MainController implements Initializable {
                 }
             }
         });
-        new Thread(fetchTask, "version-fetcher").start();
+        Thread versionThread = new Thread(fetchTask, "version-fetcher");
+        versionThread.setDaemon(true);
+        versionThread.start();
     }
 
     private void loadJarFile(Path jarPath) {
@@ -275,7 +277,9 @@ public class MainController implements Initializable {
             showError("Failed to inspect JAR", task.getException().getMessage());
         });
 
-        new Thread(task, "jar-inspector").start();
+        Thread inspectorThread = new Thread(task, "jar-inspector");
+        inspectorThread.setDaemon(true);
+        inspectorThread.start();
     }
 
     private void displayModInfo(ModInfo info) {
@@ -409,7 +413,9 @@ public class MainController implements Initializable {
             resetButton.setDisable(false);
         });
 
-        new Thread(task, "migration-pipeline").start();
+        Thread pipelineThread = new Thread(task, "migration-pipeline");
+        pipelineThread.setDaemon(true);
+        pipelineThread.start();
     }
 
     private void displayResults(MigrationResult result, MigrationConfig config) {
