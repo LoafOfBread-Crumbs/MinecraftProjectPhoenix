@@ -1,0 +1,169 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+<?import javafx.geometry.Insets?>
+
+<BorderPane xmlns="http://javafx.com/javafx"
+            xmlns:fx="http://javafx.com/fxml"
+            fx:controller="com.modmigrator.controller.MainController"
+            styleClass="root-pane">
+
+    <!-- TOP BAR -->
+    <top>
+        <HBox styleClass="top-bar" alignment="CENTER_LEFT" spacing="12">
+            <padding><Insets top="14" right="20" bottom="14" left="20"/></padding>
+            <Label text="⚡" style="-fx-font-size: 22px;"/>
+            <VBox spacing="1">
+                <Label text="Minecraft Mod Migrator" styleClass="app-title"/>
+                <Label text="Project Phoenix — Upgrade mods across Minecraft versions" styleClass="app-subtitle"/>
+            </VBox>
+            <Region HBox.hgrow="ALWAYS"/>
+            <Label text="Forge · NeoForge · Fabric · Quilt" styleClass="loader-chips"/>
+        </HBox>
+    </top>
+
+    <!-- MAIN CONTENT -->
+    <center>
+        <ScrollPane fitToWidth="true" styleClass="main-scroll">
+            <VBox spacing="16" styleClass="main-content">
+                <padding><Insets top="20" right="24" bottom="20" left="24"/></padding>
+
+                <!-- ROW 1: Drop Zone + Mod Info -->
+                <HBox spacing="16">
+
+                    <!-- DROP ZONE -->
+                    <VBox styleClass="card" minWidth="340" prefWidth="340">
+                        <Label text="1. Load Mod JAR" styleClass="section-title"/>
+                        <StackPane fx:id="dropZone" styleClass="drop-zone" prefHeight="180">
+                            <VBox alignment="CENTER" spacing="8">
+                                <Label text="📦" style="-fx-font-size: 36px;"/>
+                                <Label fx:id="dropLabel" text="Drop your mod .jar here" styleClass="drop-label"/>
+                                <Label fx:id="dropSubLabel" text="or click to browse" styleClass="drop-sub-label"/>
+                            </VBox>
+                        </StackPane>
+                        <Button fx:id="browseJarButton" text="Browse for JAR..." onAction="#onBrowseJar"
+                                styleClass="btn-secondary" maxWidth="Infinity" style="-fx-margin-top:8px;"/>
+                    </VBox>
+
+                    <!-- MOD INFO -->
+                    <VBox fx:id="modInfoPanel" styleClass="card" HBox.hgrow="ALWAYS" spacing="8">
+                        <Label text="Detected Mod Info" styleClass="section-title"/>
+                        <GridPane hgap="12" vgap="8">
+                            <Label text="Name:" styleClass="info-label" GridPane.columnIndex="0" GridPane.rowIndex="0"/>
+                            <Label fx:id="modNameLabel" text="—" styleClass="info-value" GridPane.columnIndex="1" GridPane.rowIndex="0"/>
+
+                            <Label text="Mod ID:" styleClass="info-label" GridPane.columnIndex="0" GridPane.rowIndex="1"/>
+                            <Label fx:id="modIdLabel" text="—" styleClass="info-value" GridPane.columnIndex="1" GridPane.rowIndex="1"/>
+
+                            <Label text="Loader:" styleClass="info-label" GridPane.columnIndex="0" GridPane.rowIndex="2"/>
+                            <Label fx:id="modLoaderLabel" text="—" styleClass="info-value" GridPane.columnIndex="1" GridPane.rowIndex="2"/>
+
+                            <Label text="Mod Version:" styleClass="info-label" GridPane.columnIndex="0" GridPane.rowIndex="3"/>
+                            <Label fx:id="modVersionLabel" text="—" styleClass="info-value" GridPane.columnIndex="1" GridPane.rowIndex="3"/>
+
+                            <Label text="MC Version:" styleClass="info-label" GridPane.columnIndex="0" GridPane.rowIndex="4"/>
+                            <Label fx:id="detectedMcVersionLabel" text="—" styleClass="info-value" GridPane.columnIndex="1" GridPane.rowIndex="4"/>
+                        </GridPane>
+                        <Label fx:id="modDescLabel" text="" styleClass="mod-desc" wrapText="true"/>
+                    </VBox>
+                </HBox>
+
+                <!-- ROW 2: Config -->
+                <VBox styleClass="card" spacing="12">
+                    <Label text="2. Migration Settings" styleClass="section-title"/>
+                    <HBox spacing="16" alignment="CENTER_LEFT">
+                        <VBox spacing="6" HBox.hgrow="ALWAYS">
+                            <Label text="Target Minecraft Version" styleClass="field-label"/>
+                            <ComboBox fx:id="targetVersionCombo" maxWidth="Infinity" promptText="Select version..."/>
+                        </VBox>
+                        <VBox spacing="6" HBox.hgrow="ALWAYS">
+                            <Label text="Output Directory" styleClass="field-label"/>
+                            <HBox spacing="8">
+                                <TextField fx:id="outputDirField" HBox.hgrow="ALWAYS"/>
+                                <Button fx:id="browseOutputButton" text="Browse" onAction="#onBrowseOutput" styleClass="btn-secondary"/>
+                            </HBox>
+                        </VBox>
+                    </HBox>
+                    <HBox spacing="20" alignment="CENTER_LEFT">
+                        <CheckBox fx:id="decompileCheck" text="Decompile source code"/>
+                        <CheckBox fx:id="reportCheck" text="Generate HTML report"/>
+                        <CheckBox fx:id="autoFixCheck" text="Attempt auto-fixes"/>
+                    </HBox>
+                    <HBox spacing="12" alignment="CENTER_RIGHT">
+                        <Button fx:id="resetButton" text="Reset" onAction="#onReset" styleClass="btn-secondary" disable="true"/>
+                        <Button fx:id="migrateButton" text="⚡  Run Migration" onAction="#onMigrate"
+                                styleClass="btn-primary" disable="true" defaultButton="true"/>
+                    </HBox>
+                </VBox>
+
+                <!-- ROW 3: Progress -->
+                <VBox fx:id="progressPanel" styleClass="card" spacing="10">
+                    <Label text="3. Migration Progress" styleClass="section-title"/>
+                    <ProgressBar fx:id="progressBar" maxWidth="Infinity" prefHeight="10"/>
+                    <Label fx:id="progressLabel" text="Ready" styleClass="progress-label"/>
+                    <TextArea fx:id="logArea" prefHeight="140" editable="false" styleClass="log-area" wrapText="true"/>
+                </VBox>
+
+                <!-- ROW 4: Results -->
+                <VBox fx:id="resultsPanel" styleClass="card" spacing="12">
+                    <Label text="4. Migration Results" styleClass="section-title"/>
+
+                    <HBox spacing="12">
+                        <VBox styleClass="stat-box" HBox.hgrow="ALWAYS">
+                            <Label text="Status" styleClass="stat-label"/>
+                            <Label fx:id="resultStatusLabel" text="—" styleClass="stat-value"/>
+                        </VBox>
+                        <VBox styleClass="stat-box stat-error" HBox.hgrow="ALWAYS">
+                            <Label text="Errors" styleClass="stat-label"/>
+                            <Label fx:id="resultErrorsLabel" text="0" styleClass="stat-value-error"/>
+                        </VBox>
+                        <VBox styleClass="stat-box stat-warn" HBox.hgrow="ALWAYS">
+                            <Label text="Warnings" styleClass="stat-label"/>
+                            <Label fx:id="resultWarningsLabel" text="0" styleClass="stat-value-warn"/>
+                        </VBox>
+                        <VBox styleClass="stat-box stat-ok" HBox.hgrow="ALWAYS">
+                            <Label text="Auto-Fixed" styleClass="stat-label"/>
+                            <Label fx:id="resultFixedLabel" text="0" styleClass="stat-value-ok"/>
+                        </VBox>
+                    </HBox>
+
+                    <Label fx:id="resultSummaryLabel" text="" styleClass="result-summary" wrapText="true"/>
+
+                    <TableView fx:id="issuesTable" prefHeight="280">
+                        <columns>
+                            <TableColumn fx:id="colSeverity" text="Severity" prefWidth="90"/>
+                            <TableColumn fx:id="colCategory" text="Category" prefWidth="160"/>
+                            <TableColumn fx:id="colTitle" text="Issue" prefWidth="340"/>
+                            <TableColumn fx:id="colLocation" text="Location" prefWidth="260"/>
+                        </columns>
+                        <placeholder>
+                            <Label text="No issues detected!" style="-fx-text-fill: #22c55e;"/>
+                        </placeholder>
+                    </TableView>
+
+                    <HBox spacing="10" alignment="CENTER_RIGHT">
+                        <Button fx:id="openSourceButton" text="Open Sources" onAction="#onOpenSource"
+                                styleClass="btn-secondary" disable="true"/>
+                        <Button fx:id="openOutputButton" text="Open Output Folder" onAction="#onOpenOutput"
+                                styleClass="btn-secondary" disable="true"/>
+                        <Button fx:id="openReportButton" text="View HTML Report" onAction="#onOpenReport"
+                                styleClass="btn-primary" disable="true"/>
+                    </HBox>
+                </VBox>
+
+            </VBox>
+        </ScrollPane>
+    </center>
+
+    <!-- STATUS BAR -->
+    <bottom>
+        <HBox styleClass="status-bar" alignment="CENTER_LEFT" spacing="12">
+            <padding><Insets top="6" right="16" bottom="6" left="16"/></padding>
+            <Label text="Minecraft Mod Migrator v1.0" styleClass="status-text"/>
+            <Region HBox.hgrow="ALWAYS"/>
+            <Label text="Supports: Forge · NeoForge · Fabric · Quilt | MC 1.16.x → 26.x" styleClass="status-text"/>
+        </HBox>
+    </bottom>
+
+</BorderPane>
