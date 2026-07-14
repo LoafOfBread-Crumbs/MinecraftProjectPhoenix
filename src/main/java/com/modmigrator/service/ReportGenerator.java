@@ -167,6 +167,7 @@ public class ReportGenerator {
     private String escapeHtml(String s) {
         if (s == null) return "";
         return s.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;")
-                .replace("\"", "&quot;");
+                .replace("\"", "&quot;")
+                .replace("\n", "<br>");
     }
 }

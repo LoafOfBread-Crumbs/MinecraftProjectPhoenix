@@ -2,11 +2,15 @@ package com.modmigrator.service;
 
 import com.modmigrator.model.MigrationIssue;
 import com.modmigrator.model.MigrationResult;
+import net.fabricmc.mappingio.MappingReader;
+import net.fabricmc.mappingio.tree.MappingTree;
+import net.fabricmc.mappingio.tree.MemoryMappingTree;
 import org.objectweb.asm.ClassReader;
 import org.objectweb.asm.tree.*;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.*;
 import java.util.function.Consumer;
@@ -30,9 +34,11 @@ public class ApiDiffAnalyzer {
     ) {}
 
     public void analyze(Path remappedJar, String sourceVersion, String targetVersion,
-                        MigrationResult result, Consumer<String> statusCallback) throws IOException {
+                        Path targetMappings, MigrationResult result, Consumer<String> statusCallback) throws IOException {
 
         if (statusCallback != null) statusCallback.accept("Analysing API compatibility...");
+
+        TargetMappings mappings = loadTargetMappings(targetMappings);
 
         try (JarFile jar = new JarFile(remappedJar.toFile())) {
             Enumeration<JarEntry> entries = jar.entries();
@@ -47,7 +53,7 @@ public class ApiDiffAnalyzer {
                     ClassNode classNode = new ClassNode();
                     reader.accept(classNode, 0);
 
-                    analyzeClass(classNode, sourceVersion, targetVersion, result);
+                    analyzeClass(classNode, sourceVersion, targetVersion, mappings, result);
                     classesAnalyzed++;
                 } catch (Exception e) {
                     result.addIssue(new MigrationIssue(
@@ -68,7 +74,7 @@ public class ApiDiffAnalyzer {
     }
 
     private void analyzeClass(ClassNode classNode, String sourceVersion, String targetVersion,
-                               MigrationResult result) {
+                               TargetMappings mappings, MigrationResult result) {
 
         for (MethodNode method : classNode.methods) {
             if (method.instructions == null) continue;
@@ -76,7 +82,7 @@ public class ApiDiffAnalyzer {
             for (AbstractInsnNode insn : method.instructions) {
                 if (insn instanceof MethodInsnNode methodInsn) {
                     checkMethodCall(methodInsn, classNode.name, method.name,
-                        sourceVersion, targetVersion, result);
+                        sourceVersion, targetVersion, mappings, result);
                 }
                 if (insn instanceof FieldInsnNode fieldInsn) {
                     checkFieldAccess(fieldInsn, classNode.name, method.name,
@@ -91,7 +97,8 @@ public class ApiDiffAnalyzer {
     }
 
     private void checkMethodCall(MethodInsnNode insn, String ownerClass, String callerMethod,
-                                  String sourceVersion, String targetVersion, MigrationResult result) {
+                                  String sourceVersion, String targetVersion,
+                                  TargetMappings mappings, MigrationResult result) {
         String key = insn.owner + "#" + insn.name + insn.desc;
         ApiChange change = KNOWN_API_CHANGES.get(key);
 
@@ -110,6 +117,45 @@ public class ApiDiffAnalyzer {
                     change.newOwner() != null
                         ? "Use " + change.newOwner() + "#" + change.newName() + " instead."
                         : "No direct replacement — manual rewrite required."
+                ));
+            }
+        }
+
+        if (mappings != null && insn.owner.startsWith("net/minecraft/")
+            && !"<init>".equals(insn.name) && !"<clinit>".equals(insn.name)
+            && !"values".equals(insn.name) && !"valueOf".equals(insn.name)) {
+            boolean exactMatch = mappings.methods.contains(key);
+            boolean inheritedMatch = false;
+            for (String method : mappings.methods) {
+                int hash = method.indexOf('#');
+                if (hash < 0) continue;
+                int paren = method.indexOf('(', hash);
+                if (paren < 0) continue;
+                String name = method.substring(hash + 1, paren);
+                String desc = method.substring(paren);
+                if (insn.name.equals(name) && insn.desc.equals(desc)) {
+                    inheritedMatch = true;
+                    break;
+                }
+            }
+            if (!exactMatch && !inheritedMatch) {
+                List<String> candidates = findCandidateMethods(mappings, insn.owner, insn.name);
+                StringBuilder suggestion = new StringBuilder("This method call could not be verified in the destination MC version's mappings.");
+                if (!candidates.isEmpty()) {
+                    suggestion.append(" Candidate signatures on the destination class:\n");
+                    for (String c : candidates) {
+                        suggestion.append("- ").append(c).append("\n");
+                    }
+                }
+                suggestion.append("The method may have been removed or its signature may have changed.");
+                result.addIssue(new MigrationIssue(
+                    MigrationIssue.Severity.ERROR,
+                    MigrationIssue.Category.CHANGED_SIGNATURE,
+                    "Invalid Minecraft API method call",
+                    String.format("Method '%s#%s%s' in '%s#%s' does not exist with this signature in the target MC version.",
+                        insn.owner, insn.name, insn.desc, ownerClass, callerMethod),
+                    ownerClass + "#" + callerMethod,
+                    suggestion.toString()
                 ));
             }
         }
@@ -253,6 +299,96 @@ public class ApiDiffAnalyzer {
             return major * 10000 + minor * 100 + patch;
         }
         return major * 10000 + minor * 100 + patch;
+    }
+
+    private record TargetMappings(
+        Set<String> methods,
+        Set<String> fields,
+        Map<String, Set<String>> methodsByName,
+        Map<String, Set<String>> fieldsByName
+    ) {}
+
+    private TargetMappings loadTargetMappings(Path targetMappings) {
+        if (targetMappings == null || !Files.exists(targetMappings)) return null;
+        try {
+            MemoryMappingTree tree = new MemoryMappingTree();
+            Path tinyFile = findTinyFile(targetMappings);
+            MappingReader.read(tinyFile, tree);
+
+            int targetNs = tree.getNamespaceId("intermediary");
+            if (targetNs < 0) targetNs = tree.getNamespaceId("srg");
+            if (targetNs < 0 && tree.getDstNamespaces().size() >= 1) targetNs = 1;
+            if (targetNs < 0) return null;
+
+            Set<String> methods = new HashSet<>();
+            Set<String> fields = new HashSet<>();
+            Map<String, Set<String>> methodsByName = new HashMap<>();
+            Map<String, Set<String>> fieldsByName = new HashMap<>();
+
+            for (MappingTree.ClassMapping cls : tree.getClasses()) {
+                String owner = cls.getName(targetNs);
+                if (owner == null) continue;
+                String ownerSlash = owner.replace('.', '/');
+
+                for (MappingTree.MethodMapping method : cls.getMethods()) {
+                    String name = method.getName(targetNs);
+                    String desc = method.getDesc(targetNs);
+                    if (name == null) continue;
+                    methods.add(ownerSlash + "#" + name + (desc != null ? desc : ""));
+                    methodsByName.computeIfAbsent(ownerSlash + "#" + name, k -> new HashSet<>()).add(desc != null ? desc : "");
+                }
+
+                for (MappingTree.FieldMapping field : cls.getFields()) {
+                    String name = field.getName(targetNs);
+                    String desc = field.getDesc(targetNs);
+                    if (name == null) continue;
+                    fields.add(ownerSlash + "#" + name + (desc != null ? desc : ""));
+                    fieldsByName.computeIfAbsent(ownerSlash + "#" + name, k -> new HashSet<>()).add(desc != null ? desc : "");
+                }
+            }
+
+            return new TargetMappings(methods, fields, methodsByName, fieldsByName);
+        } catch (Exception e) {
+            return null;
+        }
+    }
+
+    private Path findTinyFile(Path mappingsJarOrFile) throws IOException {
+        if (!Files.isDirectory(mappingsJarOrFile) && mappingsJarOrFile.toString().endsWith(".jar")) {
+            try (JarFile jar = new JarFile(mappingsJarOrFile.toFile())) {
+                java.util.Enumeration<java.util.jar.JarEntry> entries = jar.entries();
+                while (entries.hasMoreElements()) {
+                    java.util.jar.JarEntry entry = entries.nextElement();
+                    if (entry.getName().endsWith(".tiny") || entry.getName().endsWith(".tiny2")) {
+                        Path tmp = Files.createTempFile("mappings-", ".tiny");
+                        try (InputStream is = jar.getInputStream(entry)) {
+                            Files.copy(is, tmp, java.nio.file.StandardCopyOption.REPLACE_EXISTING);
+                        }
+                        return tmp;
+                    }
+                }
+            }
+        }
+        return mappingsJarOrFile;
+    }
+
+    private List<String> findCandidateMethods(TargetMappings mappings, String ownerSlash, String originalName) {
+        if (mappings == null || ownerSlash == null) return Collections.emptyList();
+        String prefix = ownerSlash + "#";
+        List<String> sameName = new ArrayList<>();
+        List<String> others = new ArrayList<>();
+        for (String method : mappings.methods) {
+            if (!method.startsWith(prefix)) continue;
+            int nameEnd = method.indexOf('(', prefix.length());
+            if (nameEnd < 0) continue;
+            String name = method.substring(prefix.length(), nameEnd);
+            if (name.equals(originalName)) sameName.add(method);
+            else others.add(method);
+        }
+        List<String> result = new ArrayList<>(sameName);
+        Collections.sort(others);
+        result.addAll(others);
+        return result.stream().limit(10).toList();
     }
 
     private static Map<String, ApiChange> buildKnownApiChanges() {

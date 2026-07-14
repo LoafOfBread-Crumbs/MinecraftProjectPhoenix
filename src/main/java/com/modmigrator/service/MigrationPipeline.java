@@ -3,6 +3,7 @@ package com.modmigrator.service;
 import com.modmigrator.model.MigrationConfig;
 import com.modmigrator.model.MigrationIssue;
 import com.modmigrator.model.MigrationResult;
+import com.modmigrator.model.ModInfo;
 
 import java.io.IOException;
 import java.nio.file.Files;
@@ -104,9 +105,57 @@ public class MigrationPipeline {
 
             result.setOutputJar(remappedJar);
 
-            // Step 3: API diff analysis
+            // Step 3: Fetch target-version mappings for API/Mixin validation
+            Path validationMappings = null;
+            ModInfo.ModLoader loader = config.getSourceModInfo().getModLoader();
+            if (loader == ModInfo.ModLoader.FABRIC || loader == ModInfo.ModLoader.QUILT) {
+                try {
+                    if (statusCallback != null) statusCallback.accept("Fetching Fabric intermediary mappings...");
+                    validationMappings = mappingFetcher.fetchFabricIntermediaryMappings(targetVersion, statusCallback);
+                } catch (IOException e) {
+                    result.addIssue(new MigrationIssue(
+                        MigrationIssue.Severity.WARNING,
+                        MigrationIssue.Category.REMAPPING,
+                        "Fabric intermediary mappings unavailable",
+                        "Could not fetch Fabric intermediary mappings for " + targetVersion + ": " + e.getMessage(),
+                        "MigrationPipeline",
+                        "API and Mixin validation will be skipped."
+                    ));
+                }
+            } else if (loader == ModInfo.ModLoader.FORGE || loader == ModInfo.ModLoader.NEOFORGE) {
+                try {
+                    if (statusCallback != null) statusCallback.accept("Fetching Forge SRG mappings...");
+                    validationMappings = mappingFetcher.fetchForgeSrgMappings(targetVersion, statusCallback);
+                } catch (IOException e) {
+                    result.addIssue(new MigrationIssue(
+                        MigrationIssue.Severity.WARNING,
+                        MigrationIssue.Category.REMAPPING,
+                        "Forge SRG mappings unavailable",
+                        "Could not fetch Forge SRG mappings for " + targetVersion + ": " + e.getMessage(),
+                        "MigrationPipeline",
+                        "API and Mixin validation could not be performed."
+                    ));
+                }
+            }
+
+            // Step 4: API diff analysis
             if (statusCallback != null) statusCallback.accept("Running API compatibility analysis...");
-            apiDiffAnalyzer.analyze(remappedJar, sourceVersion, targetVersion, result, statusCallback);
+            apiDiffAnalyzer.analyze(remappedJar, sourceVersion, targetVersion, validationMappings, result, statusCallback);
+
+            // Step 5: Mixin injection target validation (all loaders that use Mixin)
+            try {
+                MixinAnalyzer mixinAnalyzer = new MixinAnalyzer(validationMappings);
+                mixinAnalyzer.analyze(remappedJar, result, statusCallback);
+            } catch (IOException e) {
+                result.addIssue(new MigrationIssue(
+                    MigrationIssue.Severity.WARNING,
+                    MigrationIssue.Category.REMAPPING,
+                    "Mixin analysis failed",
+                    "Error analysing Mixin targets: " + e.getMessage(),
+                    "MigrationPipeline",
+                    "Check the logs for more detail."
+                ));
+            }
 
             // Step 4: Decompile (optional)
             if (config.isDecompileSource()) {
@@ -148,6 +197,8 @@ public class MigrationPipeline {
                     errors, warnings));
             }
 
+            result.setProcessingTimeMs(System.currentTimeMillis() - startTime);
+
             // Step 6: Generate report (after status is set)
             if (config.isGenerateReport()) {
                 try {
@@ -173,7 +224,6 @@ public class MigrationPipeline {
             ));
         }
 
-        result.setProcessingTimeMs(System.currentTimeMillis() - startTime);
         return result;
     }
 }
